@@ -24,13 +24,15 @@ def plot_confusion_matrix(y_true, y_pred,
     # Compute confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     # Only use the labels that appear in the data
-    if log:
-        if normalize:
-            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-            print("Normalized confusion matrix")
-        else:
-            print('Confusion matrix, without normalization')
 
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        if log:
+            print("Normalized confusion matrix")
+    else:
+        if log:
+            print('Confusion matrix, without normalization')
+    if log:
         print(cm)
 
     fig, ax = plt.subplots()
@@ -59,7 +61,7 @@ def plot_confusion_matrix(y_true, y_pred,
     return ax
 
 
-def results_statistics(y_pred, y_gt):
+def results_statistics(y_pred, y_gt, log = False):
     y_pred_n = np.nonzero(y_pred)[0]
     y_gt_n = np.nonzero(y_gt)[0]
     y_pred_z = np.where(y_pred == 0)[0]
@@ -72,15 +74,14 @@ def results_statistics(y_pred, y_gt):
 
     TPR = TP / float(TP + FN)
     FPR = FP / float(FP + TN)
+    F1 = 2 * TP / float(2 * TP + FN + FP)
+    if log:
+        print('True positive rate = ' + str(TPR))
+        print('False positive rate = ' + str(FPR))
+        print('F1 score = ' + str(F1))
 
-    print('True positive rate = ' + str(TPR))
-    print('False positive rate = ' + str(FPR))
+        # Plot normalized confusion matrix
+        plot_confusion_matrix(y_gt, y_pred, normalize = True)
+        plt.show()
 
-    #TODO: add F1 score
-
-
-    # Plot normalized confusion matrix
-    plot_confusion_matrix(y_gt, y_pred, normalize=True,
-                      title='Normalized confusion matrix')
-
-    plt.show()
+    return TPR, FPR, F1
