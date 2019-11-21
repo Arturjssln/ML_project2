@@ -4,6 +4,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.utils.multiclass import unique_labels
+import numpy as np
 
 
 def plot_confusion_matrix(y_true, y_pred,
