@@ -1,0 +1,1 @@
+rsync -avz --exclude '.env' -e 'ssh' ./ vviennot@deneb2.epfl.ch:/scratch/vviennot/
