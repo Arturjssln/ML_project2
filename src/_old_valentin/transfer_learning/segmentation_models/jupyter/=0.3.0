@@ -1,0 +1,28 @@
+Collecting albumentations
+  Using cached https://files.pythonhosted.org/packages/f6/c4/a1e6ac237b5a27874b01900987d902fe83cc469ebdb09eb72a68c4329e78/albumentations-0.4.3.tar.gz
+Requirement already satisfied, skipping upgrade: numpy>=1.11.1 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from albumentations) (1.17.4)
+Requirement already satisfied, skipping upgrade: scipy in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from albumentations) (1.3.3)
+Collecting imgaug<0.2.7,>=0.2.5
+  Using cached https://files.pythonhosted.org/packages/ad/2e/748dbb7bb52ec8667098bae9b585f448569ae520031932687761165419a2/imgaug-0.2.6.tar.gz
+Requirement already satisfied, skipping upgrade: PyYAML in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from albumentations) (5.1.2)
+Collecting opencv-python-headless>=4.1.1
+  Using cached https://files.pythonhosted.org/packages/5d/9f/6d89e701f45b3954df3cc2266d67accdcd6d30f38206d253a16dbaf7a961/opencv_python_headless-4.1.2.30-cp37-cp37m-macosx_10_9_x86_64.whl
+Requirement already satisfied, skipping upgrade: scikit-image>=0.11.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from imgaug<0.2.7,>=0.2.5->albumentations) (0.16.2)
+Requirement already satisfied, skipping upgrade: six in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from imgaug<0.2.7,>=0.2.5->albumentations) (1.13.0)
+Requirement already satisfied, skipping upgrade: PyWavelets>=0.4.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (1.1.1)
+Requirement already satisfied, skipping upgrade: networkx>=2.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (2.4)
+Requirement already satisfied, skipping upgrade: matplotlib!=3.0.0,>=2.0.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (3.1.2)
+Requirement already satisfied, skipping upgrade: imageio>=2.3.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (2.6.1)
+Requirement already satisfied, skipping upgrade: pillow>=4.3.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (6.2.1)
+Requirement already satisfied, skipping upgrade: decorator>=4.3.0 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from networkx>=2.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (4.4.1)
+Requirement already satisfied, skipping upgrade: cycler>=0.10 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (0.10.0)
+Requirement already satisfied, skipping upgrade: kiwisolver>=1.0.1 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (1.1.0)
+Requirement already satisfied, skipping upgrade: pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.1 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (2.4.5)
+Requirement already satisfied, skipping upgrade: python-dateutil>=2.1 in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (2.8.1)
+Requirement already satisfied, skipping upgrade: setuptools in /Users/valentin/Projects/ML_RoadSegmentation/src/valentin/transfer_learning/segmentation_models/.env/lib/python3.7/site-packages (from kiwisolver>=1.0.1->matplotlib!=3.0.0,>=2.0.0->scikit-image>=0.11.0->imgaug<0.2.7,>=0.2.5->albumentations) (41.2.0)
+Installing collected packages: imgaug, opencv-python-headless, albumentations
+    Running setup.py install for imgaug: started
+    Running setup.py install for imgaug: finished with status 'done'
+    Running setup.py install for albumentations: started
+    Running setup.py install for albumentations: finished with status 'done'
+Successfully installed albumentations-0.4.3 imgaug-0.2.6 opencv-python-headless-4.1.2.30
