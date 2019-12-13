@@ -1,0 +1,7 @@
+keras_segmentation
+keras
+tensorflow
+pillow
+imgaug
+progress
+opencv-python
