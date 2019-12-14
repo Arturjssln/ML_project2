@@ -8,11 +8,11 @@
 # 
 
 
-get_ipython().system('pip install git+https://github.com/qubvel/efficientnet')
-get_ipython().system('pip install git+https://github.com/qubvel/classification_models.git')
-get_ipython().system('pip install git+https://github.com/qubvel/segmentation_models')
-get_ipython().system('pip install -U git+https://github.com/albu/albumentations')
-get_ipython().system('pip install tta-wrapper')
+# get_ipython().system('pip install git+https://github.com/qubvel/efficientnet')
+# get_ipython().system('pip install git+https://github.com/qubvel/classification_models.git')
+# get_ipython().system('pip install git+https://github.com/qubvel/segmentation_models')
+# get_ipython().system('pip install -U git+https://github.com/albu/albumentations')
+# get_ipython().system('pip install tta-wrapper')
 
 # ## Defining data generator
 
@@ -43,8 +43,16 @@ class DataGeneratorFolder(Sequence):
                  batch_size=1, image_size=768, nb_y_features=1,
                  augmentation=None,
                  suffle=True):
+        self.root_dir = root_dir
         self.image_filenames = os.listdir(os.path.join(root_dir, image_folder))
+        for i in range(len(self.image_filenames)):
+            self.image_filenames[i] = os.path.join(os.path.join(root_dir, image_folder), self.image_filenames[i])
+
         self.mask_names = os.listdir(os.path.join(root_dir, mask_folder))
+        
+        for i in range(len(self.image_filenames)):
+            self.mask_names[i] = os.path.join(os.path.join(root_dir, mask_folder), self.mask_names[i])
+            
         self.batch_size = batch_size
         self.currentIndex = 0
         self.augmentation = augmentation
@@ -138,9 +146,9 @@ def aug_with_crop(image_size=256, crop_prob=1):
     ], p=1)
 
 
-test_generator = DataGeneratorFolder(root_dir='./data/road_segmentation_ideal/training',
-                                     image_folder='input/',
-                                     mask_folder='output/',
+test_generator = DataGeneratorFolder(root_dir='../../data/training',
+                                     image_folder='images/',
+                                     mask_folder='groundtruth/',
                                      batch_size=1,
                                      nb_y_features=1, augmentation=aug_with_crop)
 Xtest, ytest = test_generator.__getitem__(0)
@@ -150,19 +158,19 @@ plt.imshow(ytest[0, :, :, 0])
 plt.show()
 
 # setting generators
-test_generator = DataGeneratorFolder(root_dir='./data/road_segmentation_ideal/training',
-                                     image_folder='input/',
-                                     mask_folder='output/',
+test_generator = DataGeneratorFolder(root_dir='../../data/training',
+                                     image_folder='images/',
+                                     mask_folder='groundtruth/',
                                      batch_size=1, augmentation=aug_with_crop,
-                                     nb_y_features=1, augmentation=True)
+                                     nb_y_features=1)
 
-train_generator = DataGeneratorFolder(root_dir='./data/road_segmentation_ideal/training',
-                                      image_folder='input/',
-                                      mask_folder='output/',
+train_generator = DataGeneratorFolder(root_dir='../../data/training',
+                                      image_folder='test_images/',
+                                      mask_folder='test_groundtruth/',
                                       augmentation=aug_with_crop,
                                       batch_size=4,
                                       image_size=512,
-                                      nb_y_features=1, augmentation=True)
+                                      nb_y_features=1)
 
 # ## Callbacks
 
@@ -210,7 +218,7 @@ model.compile(optimizer=Adam(),
               loss=bce_jaccard_loss, metrics=[iou_score])
 
 history = model.fit_generator(train_generator, shuffle=True,
-                              epochs=50, workers=4, use_multiprocessing=True,
+                              epochs=50, workers=4, use_multiprocessing=False,
                               validation_data=test_generator,
                               verbose=1, callbacks=callbacks)
 # plotting history
