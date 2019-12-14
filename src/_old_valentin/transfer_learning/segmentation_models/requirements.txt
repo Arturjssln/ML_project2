@@ -1,6 +1,0 @@
-keras
-pillow
-tensorflow
-albumentations
-opencv-python
-git+https://github.com/qubvel/segmentation_models
