@@ -54,7 +54,6 @@ class CNN:
 
     def init_model(self):
         """ Initialize model. """
-        # UNET, cf: https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/
         pool_size = (2, 2)
         conv_size = self.conv_size
         upconv_size = 2
@@ -105,7 +104,7 @@ class CNN:
     def __augment__(self, img, seg):
         aug_det = self.augmenter.to_deterministic() 
         image_aug = aug_det.augment_image(img)
-        segmap = ia.augmentables.segmaps.SegmentationMapsOnImage(seg, shape=img.shape)
+        segmap = ia.augmentables.segmaps.SegmentationMapsOnImage(np.array(seg).astype('uint8'), shape=img.shape)
         segmap_aug = aug_det.augment_segmentation_maps( segmap )
         segmap_aug = 1*segmap_aug.get_arr()
         return image_aug , segmap_aug
@@ -142,21 +141,25 @@ class CNN:
                 img, seg = self.crop_corner(X[idx], Y[idx])
                 # Apply random transformations (augment #2)
                 img, seg = self.__augment__(img, seg)
-                X_batch[i], Y_batch[i] = img, np.expand_dims(seg, axis=2).astype('uint8')
+                X_batch[i], Y_batch[i] = img, np.expand_dims(seg, axis=2)
             yield (X_batch, Y_batch)
-    
+
+
+    def split_data(self, X, Y, rate):
+        return train_test_split(X, Y, test_size=rate, random_state=self.random_seed)
+
 
     def train(self, X, Y, initial_epoch = 0):
         """
         Train this model with the given dataset.
         """
         #X, Y = self.__pad_images__(X, Y, self.conv_size) # TODO: should we pad images?
-        
-        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=self.validation_size, random_state=self.random_seed)
+
+        X_train, X_val, y_train, y_val = self.split_data(X, Y, self.validation_size)
         
         print('Training on:', X_train.shape, 'Validating on:', X_val.shape)
         SPLIT_RATE = 4 # we divide each image in four parts
-        AUGMENTATION_RATE = 30 # let's say we want X more images to train on! - Arbitrary, relies on randomness of generate_minibatch
+        AUGMENTATION_RATE = 15 # let's say we want X more images to train on! - Arbitrary, relies on randomness of generate_minibatch
         samples_per_epoch = X.shape[0]*SPLIT_RATE*AUGMENTATION_RATE
 
         np.random.seed(self.random_seed) # Ensure determinism
@@ -172,22 +175,34 @@ class CNN:
             self.model.fit_generator(
                             self.__generator__(X_train, y_train, self.train_batch_size),
                             validation_data=self.__generator__(X_val, y_val, self.val_batch_size),# TODO: random split at input
-                            validation_steps=int(samples_per_epoch*self.validation_size/self.val_batch_size),
-                            samples_per_epoch=int(samples_per_epoch/self.train_batch_size),
+                            validation_steps=samples_per_epoch*self.validation_size//self.val_batch_size,
+                            samples_per_epoch=samples_per_epoch//self.train_batch_size,
                             nb_epoch=self.nb_epochs,
                             initial_epoch=initial_epoch,
                             verbose=self.verbose,
                             callbacks=[lr_callback, stop_callback, mode_autosave])
+                            # TODO: enable use_multiprocessing=True; ensure picke_safe before
         except KeyboardInterrupt:
             # Do not throw away the model in case the user stops the training process
             pass
 
         print('Training completed')
-        
+
+
+    def test(self, X, Y, steps = None):
+        if steps is None:
+            steps = X.shape[0]*4*10
+        return self.model.evaluate_generator(
+                        self.__generator__(X, Y),
+                        steps=steps,
+                        verbose=self.verbose,
+                        use_multiprocessing=True)
+
+
     def save(self, filename):
         """ Save the weights of this model. """
         self.model.save_weights(filename)
-        
+
 
     def load(self, filename):
         """ Load the weights for this model from a file. """
