@@ -3,3 +3,4 @@ matplotlib
 pillow
 imgaug
 sklearn
+tensorflow
