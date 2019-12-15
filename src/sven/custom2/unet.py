@@ -4,6 +4,9 @@ from keras.layers import *
 # TODO: LeakyReLU(alpha=0.1) is better than relu (cf. lectures)
 def unet(inputs, dropout_rate, pool_size,
         conv_size, upconv_size, nb_conv_1, nb_conv_2, nb_conv_3, nb_conv_4, nb_conv_5):
+    """
+    UNET, cf: https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/
+    """
     conv1 = Conv2D(nb_conv_1, conv_size, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
     conv1 = Conv2D(nb_conv_1, conv_size, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv1)
 
