@@ -83,7 +83,6 @@ def mask_to_submission_strings(model, image_filename):
             nb += 1
             yield("{:03d}_{}_{},{}".format(img_number, j, i, label))
 
-
 def generate_submission(model, submission_filename, *image_filenames):
     """ Generate a .csv containing the classification of the test set. """
     with open(submission_filename, 'w') as f:

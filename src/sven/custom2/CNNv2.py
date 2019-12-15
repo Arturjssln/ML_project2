@@ -9,12 +9,13 @@ from keras.regularizers import l2
 from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from keras import losses
 
-from helpers import *
-from unet import unet
+from sklearn.model_selection import train_test_split
 
 import imgaug as ia
 import imgaug.augmenters as iaa
 
+from helpers import *
+from unet import unet
 
 class CNN:
     def __init__(self,
@@ -135,6 +136,7 @@ class CNN:
                 X_batch[i], Y_batch[i] = img, np.expand_dims(seg, axis=2)
             yield (X_batch, Y_batch)
     
+
     def train(self, X, Y):
         """
         Train this model with the given dataset.
@@ -173,6 +175,7 @@ class CNN:
         """ Save the weights of this model. """
         self.model.save_weights(filename)
         
+
     def load(self, filename):
         """ Load the weights for this model from a file. """
         self.model.load_weights(filename)
