@@ -26,8 +26,13 @@ class CNN:
                  nb_epochs = 20,
                  verbose = 1,
                  nb_classes = 1,
-                 validation_size = 0.2):
+                 validation_size = 0.2,
+                 train_batch_size = 32,
+                 val_batch_size = 16):
         """ Construct a CNN segmenter. """
+        assert nb_classes > 0
+        assert train_batch_size > 0
+        assert val_batch_size > 0
         assert window_size%32 == 0# TODO: how do we crop?
         self.rootdir = rootdir
         self.window_size = window_size
@@ -37,6 +42,8 @@ class CNN:
         self.verbose = verbose
         self.nb_classes = nb_classes
         self.validation_size = validation_size
+        self.val_batch_size = val_batch_size
+        self.train_batch_size = train_batch_size
         self.conv_size = 3
         self.random_seed = 1000
         self.init_model()
@@ -135,11 +142,11 @@ class CNN:
                 img, seg = self.crop_corner(X[idx], Y[idx])
                 # Apply random transformations (augment #2)
                 img, seg = self.__augment__(img, seg)
-                X_batch[i], Y_batch[i] = img, np.expand_dims(seg, axis=2)
+                X_batch[i], Y_batch[i] = img, np.expand_dims(seg, axis=2).astype('uint8')
             yield (X_batch, Y_batch)
     
 
-    def train(self, X, Y):
+    def train(self, X, Y, initial_epoch = 0):
         """
         Train this model with the given dataset.
         """
@@ -149,9 +156,8 @@ class CNN:
         
         print('Training on:', X_train.shape, 'Validating on:', X_val.shape)
         SPLIT_RATE = 4 # we divide each image in four parts
-        AUGMENTATION_RATE = 30 # let's say we want 30x more images to train on! - Arbitrary, relies on randomness of generate_minibatch
-        #samples_per_epoch = X.shape[0]*SPLIT_RATE*AUGMENTATION_RATE # TODO
-        samples_per_epoch=1000
+        AUGMENTATION_RATE = 30 # let's say we want X more images to train on! - Arbitrary, relies on randomness of generate_minibatch
+        samples_per_epoch = X.shape[0]*SPLIT_RATE*AUGMENTATION_RATE
 
         np.random.seed(self.random_seed) # Ensure determinism
         
@@ -164,10 +170,12 @@ class CNN:
         
         try:
             self.model.fit_generator(
-                            self.__generator__(X_train, y_train),
-                            validation_data=self.__generator__(X_val, y_val),# TODO: random split at input
-                            samples_per_epoch=samples_per_epoch,
+                            self.__generator__(X_train, y_train, self.train_batch_size),
+                            validation_data=self.__generator__(X_val, y_val, self.val_batch_size),# TODO: random split at input
+                            validation_steps=int(samples_per_epoch*self.validation_size/self.val_batch_size),
+                            samples_per_epoch=int(samples_per_epoch/self.train_batch_size),
                             nb_epoch=self.nb_epochs,
+                            initial_epoch=initial_epoch,
                             verbose=self.verbose,
                             callbacks=[lr_callback, stop_callback, mode_autosave])
         except KeyboardInterrupt:
