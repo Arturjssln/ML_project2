@@ -114,7 +114,6 @@ class CNN:
             loss="binary_crossentropy",
             metrics=[iou, f1, "accuracy",],
         )
-        # TODO: use better metrics?
         # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
         # TODO: loss using patches (we can pass a function as loss param, returning such as losses.binary_crossentropy(y_true, y_pred))
 
@@ -267,12 +266,14 @@ class CNN:
     def test(self, X, Y, steps=None):
         if steps is None:
             steps = X.shape[0] * 4 * 10
-        return self.model.evaluate_generator(
+        results = self.model.evaluate_generator(
             self.__generator__(X, Y),
             steps=steps,
             verbose=self.verbose,
             use_multiprocessing=True,
         )
+        labels = self.model.metrics_names
+        return dict(zip(labels, results))
 
     def save(self, filename):
         """ Save the weights of this model. """
@@ -281,30 +282,3 @@ class CNN:
     def load(self, filename):
         """ Load the weights for this model from a file. """
         self.model.load_weights(filename)
-
-    # def predict_segment(self, X, auto_patch = True):
-    #     shape = X.shape
-    #     # assert size for network input
-    #     assert shape[1] == shape[2]
-    #     if auto_patch:
-    #         assert shape[1] == self.window_size*4
-    #     else:
-    #         assert shape[1] == self.window_size
-    #     # TODO
-
-    # def classify(self, X):
-    #     """
-    #     Classify an unseen set of samples.
-    #     This method must be called after "train".
-    #     Returns a list of predictions.
-    #     """
-    #     # Subdivide the images into blocks
-    #     img_patches = create_patches(X, self.patch_size, 16, self.padding)
-
-    #     # Run prediction
-    #     Z = self.model.predict(img_patches)
-    #     Z = (Z[:,0] < Z[:,1]) * 1
-
-    #     # Regroup patches into images
-    #     return group_patches(Z, X.shape[0])
-
