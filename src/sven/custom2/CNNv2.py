@@ -208,30 +208,3 @@ class CNN:
         """ Load the weights for this model from a file. """
         self.model.load_weights(filename)
         
-
-    def predict_segment(self, X, auto_patch = True):
-        shape = X.shape
-        # assert size for network input
-        assert shape[1] == shape[2]
-        if auto_patch:
-            assert shape[1] == self.window_size*4
-        else:
-            assert shape[1] == self.window_size
-        # TODO
-
-    # def classify(self, X):
-    #     """
-    #     Classify an unseen set of samples.
-    #     This method must be called after "train".
-    #     Returns a list of predictions.
-    #     """
-    #     # Subdivide the images into blocks
-    #     img_patches = create_patches(X, self.patch_size, 16, self.padding)
-        
-    #     # Run prediction
-    #     Z = self.model.predict(img_patches)
-    #     Z = (Z[:,0] < Z[:,1]) * 1
-        
-    #     # Regroup patches into images
-    #     return group_patches(Z, X.shape[0])
-        
