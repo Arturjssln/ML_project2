@@ -25,7 +25,8 @@ class CNN:
                  dropout_rate = 0.5,
                  nb_epochs = 20,
                  verbose = 1,
-                 nb_classes = 1):
+                 nb_classes = 1,
+                 validation_size = 0.2):
         """ Construct a CNN segmenter. """
         assert window_size%32 == 0# TODO: how do we crop?
         self.rootdir = rootdir
@@ -35,7 +36,9 @@ class CNN:
         self.nb_epochs = nb_epochs
         self.verbose = verbose
         self.nb_classes = nb_classes
+        self.validation_size = validation_size
         self.conv_size = 3
+        self.random_seed = 1000
         self.init_model()
         self.init_augmenter()
         # TODO: option to set if keep rgb or convert to hsv
@@ -55,11 +58,10 @@ class CNN:
         nb_conv_5 = 1024
         dropout_rate = self.dropout_rate
         #lk_alpha = 0.1
-        
         inputs = Input((self.window_size, self.window_size, self.channels_size))
         self.model = unet(inputs, dropout_rate, pool_size,
             conv_size, upconv_size, nb_conv_1, nb_conv_2, nb_conv_3, nb_conv_4, nb_conv_5)
-
+        # select loss function and metrics, as well as optimizer
         self.model.compile(optimizer = Adam(lr = 1e-4), loss = 'binary_crossentropy', metrics = ['accuracy'])
         # TODO: use better metrics? 
         # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
@@ -143,13 +145,15 @@ class CNN:
         """
         #X, Y = self.__pad_images__(X, Y, self.conv_size) # TODO: should we pad images?
         
-        print('Training set shape: ', X.shape)
+        X_train, X_val, y_train, y_val = train_test_split(X, Y, test_size=self.validation_size, random_state=self.random_seed)
+        
+        print('Training on:', X_train.shape, 'Validating on:', X_val.shape)
         SPLIT_RATE = 4 # we divide each image in four parts
         AUGMENTATION_RATE = 30 # let's say we want 30x more images to train on! - Arbitrary, relies on randomness of generate_minibatch
         #samples_per_epoch = X.shape[0]*SPLIT_RATE*AUGMENTATION_RATE # TODO
         samples_per_epoch=1000
 
-        np.random.seed(1000) # Ensure determinism
+        np.random.seed(self.random_seed) # Ensure determinism
         
         # This callback reduces the learning rate when the training accuracy does not improve any more
         lr_callback = ReduceLROnPlateau(monitor='acc', factor=0.5, patience=5, verbose=1, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
@@ -160,7 +164,8 @@ class CNN:
         
         try:
             self.model.fit_generator(
-                            self.__generator__(X, Y),
+                            self.__generator__(X_train, y_train),
+                            validation_data=self.__generator__(X_val, y_val),# TODO: random split at input
                             samples_per_epoch=samples_per_epoch,
                             nb_epoch=self.nb_epochs,
                             verbose=self.verbose,
