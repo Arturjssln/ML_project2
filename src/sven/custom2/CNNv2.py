@@ -6,7 +6,7 @@ from keras.layers import Input
 from keras.optimizers import *
 from keras.utils import np_utils
 from keras.regularizers import l2
-from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint, CSVLogger
 from keras import losses
 
 from sklearn.model_selection import train_test_split
@@ -62,7 +62,7 @@ class CNN:
         assert nb_classes > 0
         assert train_batch_size > 0
         assert val_batch_size > 0
-        assert window_size % 32 == 0  # TODO: how do we crop?
+        assert window_size % 32 == 0
         self.rootdir = rootdir
         self.window_size = window_size
         self.channels_size = channels_size
@@ -81,7 +81,6 @@ class CNN:
         self.init_model()
         self.init_augmenter()
         # TODO: option to set if keep rgb or convert to hsv
-        # self.patch_size = 16 # TODO: use it in penalizer and predict patches function
 
     def init_model(self):
         """ Initialize model. """
@@ -214,6 +213,10 @@ class CNN:
 
         np.random.seed(self.random_seed)  # Ensure determinism
 
+        # Save metadata to a file (useful when colab goes in background)
+        csv_logger = CSVLogger(
+            filename=os.path.join(self.rootdir, "log.csv"), append=True
+        )
         # This callback reduces the learning rate when the training accuracy does not improve any more
         lr_callback = ReduceLROnPlateau(
             monitor=self.adjust_metric,
@@ -246,9 +249,7 @@ class CNN:
         try:
             history = self.model.fit_generator(
                 self.__generator__(X_train, y_train, self.train_batch_size),
-                validation_data=self.__generator__(
-                    X_val, y_val, self.val_batch_size
-                ),  # TODO: random split at input
+                validation_data=self.__generator__(X_val, y_val, self.val_batch_size),
                 validation_steps=samples_per_epoch
                 * self.validation_size
                 // self.val_batch_size,
@@ -256,7 +257,7 @@ class CNN:
                 nb_epoch=self.nb_epochs,
                 initial_epoch=initial_epoch,
                 verbose=self.verbose,
-                callbacks=[lr_callback, stop_callback, mode_autosave],
+                callbacks=[lr_callback, stop_callback, csv_logger, mode_autosave],
                 use_multiprocessing=True,
             )
             print("Training completed")
