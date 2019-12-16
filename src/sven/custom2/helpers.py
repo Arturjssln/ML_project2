@@ -5,6 +5,15 @@ import os,sys
 from PIL import Image
 import re
 
+def random_crop(img, mask, random_crop_size):
+    # Note: image_data_format is 'channel_last'
+    assert img.shape[2] == 3
+    height, width = img.shape[0], img.shape[1]
+    dy, dx = random_crop_size
+    x = np.random.randint(0, width - dx + 1)
+    y = np.random.randint(0, height - dy + 1)
+    return img[y:(y+dy), x:(x+dx), :], mask[y:(y+dy), x:(x+dx)]
+
 def load_image(infilename):
     """ Load an image from disk. """
     return mpimg.imread(infilename)

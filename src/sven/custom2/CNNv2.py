@@ -186,7 +186,9 @@ class CNN:
                 idx = np.random.choice(X.shape[0])
                 shape = X[idx].shape
                 # Crop random part from the corner (augment #1)
-                img, seg = self.crop_corner(X[idx], Y[idx])
+                img, seg = X[idx], Y[idx]
+                # img, seg = self.crop_corner(X[idx], Y[idx])
+                img, seg = random_crop(img, seg, (self.window_size, self.window_size))
                 # Apply random transformations (augment #2)
                 img, seg = self.__augment__(img, seg)
                 X_batch[i], Y_batch[i] = img, np.expand_dims(seg, axis=2)
@@ -262,8 +264,6 @@ class CNN:
         except KeyboardInterrupt:
             # Do not throw away the model in case the user stops the training process
             pass
-
-        print("Training completed")
 
     def test(self, X, Y, steps=None):
         if steps is None:
