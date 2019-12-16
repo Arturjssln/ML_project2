@@ -242,7 +242,7 @@ class CNN:
         )
 
         try:
-            self.model.fit_generator(
+            history = self.model.fit_generator(
                 self.__generator__(X_train, y_train, self.train_batch_size),
                 validation_data=self.__generator__(
                     X_val, y_val, self.val_batch_size
@@ -257,6 +257,8 @@ class CNN:
                 callbacks=[lr_callback, stop_callback, mode_autosave],
                 use_multiprocessing=True,
             )
+            print("Training completed")
+            return history
         except KeyboardInterrupt:
             # Do not throw away the model in case the user stops the training process
             pass
