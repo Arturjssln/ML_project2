@@ -5,6 +5,9 @@ import os,sys
 from PIL import Image
 import re
 
+def unsqueeze(array, axis=2):
+    return np.expand_dims(array, axis=axis)
+
 def random_crop(img, mask, random_crop_size):
     # Note: image_data_format is 'channel_last'
     assert img.shape[2] == 3
