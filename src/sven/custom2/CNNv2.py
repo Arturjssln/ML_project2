@@ -190,7 +190,7 @@ class CNN:
                 img, seg = random_crop(img, seg, (self.window_size, self.window_size))
                 # Apply random transformations (augment #2)
                 img, seg = self.__augment__(img, seg)
-                X_batch[i], Y_batch[i] = unsqueeze(img), unsqueeze(seg)
+                X_batch[i], Y_batch[i] = unsqueeze(img) if self.channels_size == 1 else img, unsqueeze(seg)
             yield (X_batch, Y_batch)
 
     def split_data(self, X, Y, rate, seed=None):
