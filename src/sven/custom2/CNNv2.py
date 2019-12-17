@@ -57,6 +57,9 @@ class CNN:
         augmentation_coef=30,
         adjust_metric="val_f1",
         save_metric="val_f1",
+        best_model_filename="best.h5",
+        log_csv_filename="log.csv",
+        lk_alpha=0
     ):
         """ Construct a CNN segmenter. """
         assert nb_classes > 0
@@ -77,7 +80,9 @@ class CNN:
         self.augmentation_coef = augmentation_coef
         self.adjust_metric = adjust_metric
         self.save_metric = save_metric
-        self.conv_size = 3
+        self.best_model_filename = best_model_filename
+        self.log_csv_filename = log_csv_filename
+        self.lk_alpha = lk_alpha
         self.init_model()
         self.init_augmenter()
         # TODO: option to set if keep rgb or convert to hsv
@@ -85,7 +90,7 @@ class CNN:
     def init_model(self):
         """ Initialize model. """
         pool_size = (2, 2)
-        conv_size = self.conv_size
+        conv_size = 3
         upconv_size = 2
         nb_conv_1 = 64
         nb_conv_2 = 128
@@ -106,6 +111,7 @@ class CNN:
             nb_conv_3,
             nb_conv_4,
             nb_conv_5,
+            self.lk_alpha
         )
         # select loss function and metrics, as well as optimizer
         self.model.compile(
@@ -190,7 +196,10 @@ class CNN:
                 img, seg = random_crop(img, seg, (self.window_size, self.window_size))
                 # Apply random transformations (augment #2)
                 img, seg = self.__augment__(img, seg)
-                X_batch[i], Y_batch[i] = unsqueeze(img) if self.channels_size == 1 else img, unsqueeze(seg)
+                X_batch[i], Y_batch[i] = (
+                    unsqueeze(img) if self.channels_size == 1 else img,
+                    unsqueeze(seg),
+                )
             yield (X_batch, Y_batch)
 
     def split_data(self, X, Y, rate, seed=None):
@@ -202,8 +211,6 @@ class CNN:
         """
         Train this model with the given dataset.
         """
-        # X, Y = self.__pad_images__(X, Y, self.conv_size) # TODO: should we pad images?
-
         X_train, X_val, y_train, y_val = self.split_data(X, Y, self.validation_size)
 
         print("Training on:", X_train.shape, "Validating on:", X_val.shape)
@@ -215,7 +222,7 @@ class CNN:
 
         # Save metadata to a file (useful when colab goes in background)
         csv_logger = CSVLogger(
-            filename=os.path.join(self.rootdir, "log.csv"), append=True
+            filename=os.path.join(self.rootdir, self.log_csv_filename), append=True
         )
         # This callback reduces the learning rate when the training accuracy does not improve any more
         lr_callback = ReduceLROnPlateau(
@@ -238,7 +245,7 @@ class CNN:
         )
         # Save the latest best model to rootdir
         mode_autosave = ModelCheckpoint(
-            os.path.join(self.rootdir, "best.h5"),
+            os.path.join(self.rootdir, self.best_model_filename),
             monitor=self.save_metric,
             mode="max",
             save_best_only=True,
