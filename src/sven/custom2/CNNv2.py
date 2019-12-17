@@ -85,7 +85,6 @@ class CNN:
         self.lk_alpha = lk_alpha
         self.init_model()
         self.init_augmenter()
-        # TODO: option to set if keep rgb or convert to hsv
 
     def init_model(self):
         """ Initialize model. """
