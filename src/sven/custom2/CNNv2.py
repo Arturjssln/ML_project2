@@ -9,8 +9,6 @@ from keras.regularizers import l2
 from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint, CSVLogger
 from keras import losses
 
-import tensorflow as tf
-
 from sklearn.model_selection import train_test_split
 
 import imgaug as ia
@@ -43,12 +41,6 @@ def iou(y_true, y_pred, smooth=1):
     iou_coef = K.mean((intersection + smooth) / (union + smooth), axis=0)
     return iou_coef
 
-
-def custom_loss(y_true, y_pred):
-    yp = y_pred.numpy()
-    yt = y_true.numpy()
-    return losses.binary_crossentropy(tf.convert_to_tensor(yt), tf.convert_to_tensor(yp))
-    
 
 class CNN:
     def __init__(
@@ -124,7 +116,7 @@ class CNN:
         # select loss function and metrics, as well as optimizer
         self.model.compile(
             optimizer=Adam(lr=1e-4),
-            loss=custom_loss,#"binary_crossentropy",
+            loss="binary_crossentropy",
             metrics=[iou, f1, "accuracy",],
         )  # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
         # TODO: loss using patches (we can pass a function as loss param, returning such as losses.binary_crossentropy(y_true, y_pred))
