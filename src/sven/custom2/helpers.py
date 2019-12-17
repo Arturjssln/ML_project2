@@ -6,9 +6,9 @@ from PIL import Image
 
 def get_ground_img(Xi, patch_size, foreground_threshold):
     width, height = Xi.shape
-    assert patch_size>0
-    assert width%patch_size==0
-    assert height%patch_size==0
+    assert patch_size>0, f'patch_size {patch_size} has to be > 0'
+    assert width%patch_size==0, f'{width} is not a factor of {patch_size}'
+    assert height%patch_size==0, f'{height} is not a factor of {patch_size}'
     #TODO: ratio
     #ground = Xi.copy()
     #for j in range(0, Xi.shape[1], patch_size):

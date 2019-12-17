@@ -44,10 +44,10 @@ def iou(y_true, y_pred, smooth=1):
     return iou_coef
 
 
-def custom_loss(y_true, y_pred):
-    yp = y_pred.numpy()
-    yt = y_true.numpy()
-    return losses.binary_crossentropy(tf.convert_to_tensor(yt), tf.convert_to_tensor(yp))
+# def custom_loss(y_true, y_pred):
+#     yp = y_pred.numpy()
+#     yt = y_true.numpy()
+#     return losses.binary_crossentropy(tf.convert_to_tensor(yt), tf.convert_to_tensor(yp))
     
 
 class CNN:
@@ -124,7 +124,7 @@ class CNN:
         # select loss function and metrics, as well as optimizer
         self.model.compile(
             optimizer=Adam(lr=1e-4),
-            loss=custom_loss,#"binary_crossentropy",
+            loss="binary_crossentropy",
             metrics=[iou, f1, "accuracy",],
         )  # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
         # TODO: loss using patches (we can pass a function as loss param, returning such as losses.binary_crossentropy(y_true, y_pred))
@@ -196,7 +196,7 @@ class CNN:
                 img, seg = random_crop(img, seg, (self.window_size, self.window_size))
                 X_batch[i], Y_batch[i] = (
                     unsqueeze(img) if self.channels_size == 1 else img,
-                    unsqueeze(seg),
+                    get_ground_img(unsqueeze(seg), 16, 0.25),
                 )
             yield (X_batch, Y_batch)
 

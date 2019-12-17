@@ -48,4 +48,5 @@ def unet(
     i = Input(shape=(window_size, window_size, channels))
     o = level_block(i, start_ch, depth, inc_rate, activation, dropout, batchnorm, maxpool, upconv, residual)
     o = Conv2D(out_ch, 1, activation='sigmoid')(o)
+    o = AveragePooling2D(pool_size=(16,16))(o)
     return Model(inputs=i, outputs=o)
