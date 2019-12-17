@@ -15,7 +15,8 @@ import imgaug as ia
 import imgaug.augmenters as iaa
 
 from helpers import *
-#from unet import unet
+
+# from unet import unet
 from unetV2 import unet
 
 
@@ -60,17 +61,20 @@ class CNN:
         save_metric="val_f1",
         best_model_filename="best.h5",
         log_csv_filename="log.csv",
-        lk_alpha=.0,
+        lk_alpha=0.0,
         net_depth=4,
         batchnorm=False,
-        residual=False
+        residual=False,
+        first_conv_size=64,
     ):
         """ Construct a CNN segmenter. """
         assert nb_classes > 0, "classify at least in one category!"
         assert train_batch_size > 0, "cannot train on 0 images"
-        assert val_batch_size > 0, "cannot validate on 0 images"# TODO: allow it
+        assert val_batch_size > 0, "cannot validate on 0 images"  # TODO: allow it
         assert window_size % 32 == 0, "unet reduces on x32 convolution size"
-        assert lk_alpha >= 0, "leaky alpha has to be set to 0 to switch to simple relu activation function"
+        assert (
+            lk_alpha >= 0
+        ), "leaky alpha has to be set to 0 to switch to simple relu activation function"
         self.rootdir = rootdir
         self.window_size = window_size
         self.channels_size = channels_size
@@ -91,56 +95,32 @@ class CNN:
         self.net_depth = net_depth
         self.batchnorm = batchnorm
         self.residual = residual
+        self.first_conv_size = first_conv_size
         self.init_model()
         self.init_augmenter()
 
     def init_model(self):
         """ Initialize model. """
-        pool_size = (2, 2)
-        conv_size = 3
-        upconv_size = 2
-        nb_conv_1 = 64
-        nb_conv_2 = 128
-        nb_conv_3 = 256
-        nb_conv_4 = 512
-        nb_conv_5 = 1024
-        dropout_rate = self.dropout_rate
-        # lk_alpha = 0.1
-        # inputs = Input((self.window_size, self.window_size, self.channels_size))
-        # self.model = unet(
-        #     inputs,
-        #     dropout_rate,
-        #     pool_size,
-        #     conv_size,
-        #     upconv_size,
-        #     nb_conv_1,
-        #     nb_conv_2,
-        #     nb_conv_3,
-        #     nb_conv_4,
-        #     nb_conv_5,
-        #     self.lk_alpha,
-        # )
         self.model = unet(
             self.window_size,
+            channels=self.channels_size,
             dropout=self.dropout_rate,
             lk_alpha=self.lk_alpha,
-            out_ch=1,
-            start_ch=self.channels_size,
+            start_ch=self.first_conv_size,
             depth=self.net_depth,
-            inc_rate=2.,
             batchnorm=self.batchnorm,
             maxpool=True,
             upconv=True,
-            residual=self.residual
+            residual=self.residual,
         )
         # select loss function and metrics, as well as optimizer
         self.model.compile(
             optimizer=Adam(lr=1e-4),
             loss="binary_crossentropy",
             metrics=[iou, f1, "accuracy",],
-        )
-        # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
+        )  # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
         # TODO: loss using patches (we can pass a function as loss param, returning such as losses.binary_crossentropy(y_true, y_pred))
+        print(self.model.summary())
 
     def init_augmenter(self):
         self.augmenter1 = iaa.Sequential(
@@ -159,7 +139,7 @@ class CNN:
                 ),  # blur 50 % of the images
                 # Make some images brighter and some darker.
                 iaa.Multiply((0.8, 1.2), per_channel=0.1),
-                iaa.GammaContrast((0.5, 1.5))
+                iaa.GammaContrast((0.5, 1.5)),
             ]
         )
 
