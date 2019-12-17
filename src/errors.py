@@ -23,5 +23,5 @@ def result_scores(y_pred, y_gt):
     TPR = TP / float(TP + FN)
     FPR = FP / float(FP + TN)
     F1 = 2 * TP / float(2 * TP + FN + FP)
-
-    return TPR, FPR, F1
+    PREC = (TP + TN) / float(len(y_pred))
+    return TPR, FPR, F1, PREC
