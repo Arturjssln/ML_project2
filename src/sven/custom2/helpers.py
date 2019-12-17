@@ -1,9 +1,34 @@
+import os, sys
 import matplotlib.image as mpimg
-import numpy as np
 import matplotlib.pyplot as plt
-import os,sys
+import numpy as np
 from PIL import Image
-import re
+
+def get_ground_img(Xi, patch_size, foreground_threshold):
+    width, height = Xi.shape
+    assert patch_size>0
+    assert width%patch_size==0
+    assert height%patch_size==0
+    #TODO: ratio
+    #ground = Xi.copy()
+    #for j in range(0, Xi.shape[1], patch_size):
+    #    for i in range(0, Xi.shape[0], patch_size):
+    ground = np.zeros((int(width/patch_size), int(height/patch_size)))
+    for j, i in np.ndindex(ground.shape):
+        label = patch_to_label(Xi, i, j, patch_size, foreground_threshold)
+        #ground[i:i + patch_size, j:j + patch_size].fill(label)
+        ground[i, j] = label
+    return ground
+
+def patch_to_label(Xi, i, j, patch_size, foreground_threshold):
+    base_i = i*patch_size
+    base_j = j*patch_size
+    patch = Xi[base_i:base_i + patch_size, base_j:base_j + patch_size]
+    df = np.mean(patch)
+    if df > foreground_threshold:
+        return 1
+    else:
+        return 0
 
 def unsqueeze(array, axis=2):
     return np.expand_dims(array, axis=axis)
