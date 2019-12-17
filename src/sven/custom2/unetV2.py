@@ -4,10 +4,11 @@ import tensorflow as tf
 
 def unet(
     window_size,
+    channels=3,
     dropout=0.5,
     lk_alpha=.0,
     out_ch=1,
-    start_ch=64,
+    start_ch=3,
     depth=4,
     inc_rate=2.,
     batchnorm=False,
@@ -44,7 +45,7 @@ def unet(
             m = conv_block(m, dim, acti, bn, res, do)
         return m
 
-    i = Input(shape=(window_size, window_size))
+    i = Input(shape=(window_size, window_size, channels))
     o = level_block(i, start_ch, depth, inc_rate, activation, dropout, batchnorm, maxpool, upconv, residual)
     o = Conv2D(out_ch, 1, activation='sigmoid')(o)
     return Model(inputs=i, outputs=o)
