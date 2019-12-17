@@ -123,24 +123,18 @@ class CNN:
         # TODO: loss using patches (we can pass a function as loss param, returning such as losses.binary_crossentropy(y_true, y_pred))
 
     def init_augmenter(self):
-        self.augmenter = iaa.Sequential(
+        self.augmenter1 = iaa.Sequential(
             [
-                iaa.Fliplr(0.25),  # horizontally flip 25% of the images
-                iaa.Flipud(0.25),  # vertically flip 25% of all images
-                iaa.Sometimes(
-                    0.5, iaa.GaussianBlur(sigma=(0, 1))
-                ),  # blur 50 % of the images
-                iaa.Sometimes(
-                    0.5, iaa.Affine(rotate=(-180, 180))
-                ),  # rotate 50% of the images
+                iaa.Affine(rotate=(-180, 180), mode = 'reflect'),  # rotate all images with random angle
+
+            ])
+        self.augmenter2 = iaa.Sequential(
+            [
+                iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 1))), #blur 50 % of the images
                 # Make some images brighter and some darker.
-                # In 10% of all cases, we sample the multiplier once per channel,
-                # which can end up changing the color of the images.
                 # iaa.Multiply((0.8, 1.2), per_channel=0.1),# TODO: deactivated to ensure HSV compatibility
                 # iaa.GammaContrast((0.5, 1.5)) # TODO: deactivated to ensure HSV compatibility
-            ],
-            random_order=True,
-        )
+            ])
 
     # def __pad_images__(self, X, Y, padding):
     #     # Pad training set images (by appling mirror boundary conditions)
@@ -155,11 +149,13 @@ class CNN:
     #     return (X_new, Y_new)
 
     def __augment__(self, img, seg):
-        aug_det = self.augmenter.to_deterministic()
-        image_aug = aug_det.augment_image(img)
-        segmap = ia.augmentables.segmaps.SegmentationMapsOnImage(seg, shape=img.shape)
-        segmap_aug = aug_det.augment_segmentation_maps(segmap)
-        segmap_aug = 1 * segmap_aug.get_arr()
+        aug_det1 = self.augmenter1.to_deterministic()
+        # change only orienation and border using mirror boundaries for both img and groundtruth
+        segmap_aug = aug_det1.augment_image(seg)
+        image_aug = aug_det1.augment_image(img)
+        # Add some noise and and blurring on the image
+        image_aug = self.augmenter2.augment_image(img)
+
         return image_aug, segmap_aug
 
     def crop_corner(self, img, seg, corner=None):
