@@ -7,8 +7,7 @@ def unet(inputs, dropout_rate, pool_size, conv_size, upconv_size,
     """
     UNET, cf: https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/
     """
-    lrelu = lambda x: tf.keras.activations.relu(x, alpha=lk_alpha)
-    lrelu = lrelu if lk_alpha > 0 else "relu"
+    lrelu = (lambda x: tf.keras.activations.relu(x, alpha=lk_alpha)) if lk_alpha > 0 else "relu"
     conv1 = Conv2D(nb_conv_1, conv_size, activation = lrelu, padding = 'same', kernel_initializer = 'he_normal')(inputs)
     conv1 = Conv2D(nb_conv_1, conv_size, activation = lrelu, padding = 'same', kernel_initializer = 'he_normal')(conv1)
 

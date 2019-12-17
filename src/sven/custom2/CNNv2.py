@@ -59,7 +59,7 @@ class CNN:
         save_metric="val_f1",
         best_model_filename="best.h5",
         log_csv_filename="log.csv",
-        lk_alpha=0
+        lk_alpha=0.01,
     ):
         """ Construct a CNN segmenter. """
         assert nb_classes > 0
@@ -110,7 +110,7 @@ class CNN:
             nb_conv_3,
             nb_conv_4,
             nb_conv_5,
-            self.lk_alpha
+            self.lk_alpha,
         )
         # select loss function and metrics, as well as optimizer
         self.model.compile(
@@ -124,37 +124,33 @@ class CNN:
     def init_augmenter(self):
         self.augmenter1 = iaa.Sequential(
             [
-                iaa.Affine(rotate=(-180, 180), mode = 'reflect'),  # rotate all images with random angle
-
-            ])
+                iaa.Fliplr(0.25),
+                iaa.Flipud(0.25),
+                iaa.Affine(
+                    rotate=(-180, 180), mode="reflect"
+                ),  # rotate all images with random angle
+            ]
+        )
         self.augmenter2 = iaa.Sequential(
             [
-                iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 1))), #blur 50 % of the images
+                iaa.Sometimes(
+                    0.1, iaa.GaussianBlur(sigma=(0, 1))
+                ),  # blur 50 % of the images
                 # Make some images brighter and some darker.
-                # iaa.Multiply((0.8, 1.2), per_channel=0.1),# TODO: deactivated to ensure HSV compatibility
-                # iaa.GammaContrast((0.5, 1.5)) # TODO: deactivated to ensure HSV compatibility
-            ])
-
-    # def __pad_images__(self, X, Y, padding):
-    #     # Pad training set images (by appling mirror boundary conditions)
-    #     X_new = np.empty((X.shape[0],
-    #                      X.shape[1] + 2*padding, X.shape[2] + 2*padding,
-    #                      X.shape[3]))
-    #     Y_new = np.empty((Y.shape[0],
-    #                      Y.shape[1] + 2*padding, Y.shape[2] + 2*padding))
-    #     for i in range(X.shape[0]):
-    #         X_new[i] = pad_image(X[i], padding)
-    #         Y_new[i] = pad_image(Y[i], padding)
-    #     return (X_new, Y_new)
+                iaa.Multiply((0.8, 1.2), per_channel=0.1),
+                iaa.GammaContrast((0.5, 1.5))
+            ]
+        )
 
     def __augment__(self, img, seg):
         aug_det1 = self.augmenter1.to_deterministic()
         # change only orienation and border using mirror boundaries for both img and groundtruth
-        segmap_aug = aug_det1.augment_image(seg)
-        image_aug = aug_det1.augment_image(img)
+        seg_aug = aug_det1.augment_image(seg)
+        segmap_aug = ia.SegmentationMapsOnImage(seg_aug, shape=img.shape)
+        segmap_aug = 1 * segmap_aug.get_arr()
+        image_aug1 = aug_det1.augment_image(img)
         # Add some noise and and blurring on the image
-        image_aug = self.augmenter2.augment_image(img)
-
+        image_aug = self.augmenter2.augment_image(image_aug1)
         return image_aug, segmap_aug
 
     def crop_corner(self, img, seg, corner=None):
@@ -185,12 +181,10 @@ class CNN:
                 # Select a random image
                 idx = np.random.choice(X.shape[0])
                 shape = X[idx].shape
-                # Crop random part from the corner (augment #1)
                 img, seg = X[idx], Y[idx]
                 # img, seg = self.crop_corner(X[idx], Y[idx])
-                img, seg = random_crop(img, seg, (self.window_size, self.window_size))
-                # Apply random transformations (augment #2)
                 img, seg = self.__augment__(img, seg)
+                img, seg = random_crop(img, seg, (self.window_size, self.window_size))
                 X_batch[i], Y_batch[i] = (
                     unsqueeze(img) if self.channels_size == 1 else img,
                     unsqueeze(seg),
