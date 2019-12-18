@@ -74,12 +74,14 @@ class CNN:
         batchnorm=False,
         residual=False,
         first_conv_size=64,
+        patch_size=16
     ):
         """ Construct a CNN segmenter. """
         assert nb_classes > 0, "classify at least in one category!"
         assert train_batch_size > 0, "cannot train on 0 images"
         assert val_batch_size > 0, "cannot validate on 0 images"  # TODO: allow it
         assert window_size % 32 == 0, "unet reduces on x32 convolution size"
+        assert window_size % patch_size == 0, f"unet reduces on x{patch_size} patches"
         assert (
             lk_alpha >= 0
         ), "leaky alpha has to be set to 0 to switch to simple relu activation function"
@@ -104,6 +106,7 @@ class CNN:
         self.batchnorm = batchnorm
         self.residual = residual
         self.first_conv_size = first_conv_size
+        self.patch_size = patch_size
         self.init_model()
         self.init_augmenter()
 
@@ -133,8 +136,8 @@ class CNN:
     def init_augmenter(self):
         self.augmenter1 = iaa.Sequential(
             [
-                iaa.Fliplr(0.25),
-                iaa.Flipud(0.25),
+               iaa.Fliplr(0.25),
+               iaa.Flipud(0.25),
                 iaa.Affine(
                     rotate=(-180, 180), mode="reflect"
                 ),  # rotate all images with random angle
@@ -153,14 +156,13 @@ class CNN:
 
     def __augment__(self, img, seg):
         aug_det1 = self.augmenter1.to_deterministic()
-        # change only orienation and border using mirror boundaries for both img and groundtruth
-        seg_aug = aug_det1.augment_image(seg)
-        segmap_aug = ia.SegmentationMapsOnImage(seg_aug, shape=img.shape)
-        segmap_aug = 1 * segmap_aug.get_arr()
-        image_aug1 = aug_det1.augment_image(img)
-        # Add some noise and and blurring on the image
-        image_aug = self.augmenter2.augment_image(image_aug1)
-        return image_aug, segmap_aug
+        aug_det2 = self.augmenter2.to_deterministic()
+        img = aug_det1.augment_image(img)
+        seg = aug_det1.augment_image(seg)
+        seg = ia.SegmentationMapsOnImage(seg, shape=img.shape)
+        seg = 1 * seg.get_arr()
+        img = aug_det2.augment_image(img)
+        return img, seg
 
     def crop_corner(self, img, seg, corner=None):
         shape = img.shape  # x,y
@@ -174,6 +176,15 @@ class CNN:
         # return sliced images
         return img[x_from:x_to, y_from:y_to], seg[x_from:x_to, y_from:y_to]
 
+    def __transform__(self, img, seg):
+        img_cp, seg_cp = img.copy(), seg.copy()
+        img_cp, seg_cp = self.__augment__(img_cp, seg_cp)
+        img_cp, seg_cp = random_crop(img_cp, seg_cp, (self.window_size, self.window_size))
+        return (
+            unsqueeze(img_cp) if self.channels_size == 1 else img_cp,
+            unsqueeze(get_ground_img(seg_cp, self.patch_size, 0.25))
+        )
+
     def __generator__(self, X, Y, batch_size=16):
         """
         Procedure for real-time minibatch creation and image augmentation.
@@ -185,19 +196,12 @@ class CNN:
                 (batch_size, self.window_size, self.window_size, self.channels_size)
             )
             # We use an integer value to label the pixel class
-            Y_batch = np.empty((batch_size, self.window_size, self.window_size, 1))
+            reduced_output = int(self.window_size/self.patch_size)
+            Y_batch = np.empty((batch_size, reduced_output, reduced_output, 1))
             for i in range(batch_size):
                 # Select a random image
                 idx = np.random.choice(X.shape[0])
-                shape = X[idx].shape
-                img, seg = X[idx], Y[idx]
-                # img, seg = self.crop_corner(X[idx], Y[idx])
-                img, seg = self.__augment__(img, seg)
-                img, seg = random_crop(img, seg, (self.window_size, self.window_size))
-                X_batch[i], Y_batch[i] = (
-                    unsqueeze(img) if self.channels_size == 1 else img,
-                    get_ground_img(unsqueeze(seg), 16, 0.25),
-                )
+                X_batch[i], Y_batch[i] = self.__transform__(X[idx], Y[idx])
             yield (X_batch, Y_batch)
 
     def split_data(self, X, Y, rate, seed=None):
