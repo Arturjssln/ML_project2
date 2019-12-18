@@ -173,7 +173,7 @@ class CNN:
         img_cp, seg_cp = random_crop(img_cp, seg_cp, (self.window_size, self.window_size))
         return (
             unsqueeze(img_cp) if self.channels_size == 1 else img_cp,
-            unsqueeze(get_ground_img(seg_cp, self.patch_size, 0.25))
+            unsqueeze(seg_cp)
         )
 
     def __generator__(self, X, Y, batch_size=16):
@@ -187,8 +187,9 @@ class CNN:
                 (batch_size, self.window_size, self.window_size, self.channels_size)
             )
             # We use an integer value to label the pixel class
-            reduced_output = int(self.window_size/self.patch_size)
-            Y_batch = np.empty((batch_size, reduced_output, reduced_output, 1))
+            Y_batch = np.empty(
+                (batch_size, self.window_size, self.window_size, 1)
+            )
             for i in range(batch_size):
                 # Select a random image
                 idx = np.random.choice(X.shape[0])
