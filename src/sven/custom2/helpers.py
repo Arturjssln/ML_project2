@@ -6,17 +6,12 @@ from PIL import Image
 
 def get_ground_img(Xi, patch_size, foreground_threshold):
     width, height = Xi.shape
-    assert patch_size>0
-    assert width%patch_size==0
-    assert height%patch_size==0
-    #TODO: ratio
-    #ground = Xi.copy()
-    #for j in range(0, Xi.shape[1], patch_size):
-    #    for i in range(0, Xi.shape[0], patch_size):
+    assert patch_size>0, f'patch_size {patch_size} has to be > 0'
+    assert width%patch_size==0, f'{width} is not a factor of {patch_size}'
+    assert height%patch_size==0, f'{height} is not a factor of {patch_size}'
     ground = np.zeros((int(width/patch_size), int(height/patch_size)))
     for j, i in np.ndindex(ground.shape):
         label = patch_to_label(Xi, i, j, patch_size, foreground_threshold)
-        #ground[i:i + patch_size, j:j + patch_size].fill(label)
         ground[i, j] = label
     return ground
 
