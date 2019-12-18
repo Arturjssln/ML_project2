@@ -59,12 +59,14 @@ class CNN:
         augmentation_coef=30,
         adjust_metric="val_f1",
         save_metric="val_f1",
+        stop_metric="val_f1",
         best_model_filename="best.h5",
         log_csv_filename="log.csv",
         lk_alpha=0.0,
         net_depth=4,
         batchnorm=False,
         residual=False,
+        use_multiprocessing=True,
         first_conv_size=64,
         patch_size=16
     ):
@@ -73,7 +75,7 @@ class CNN:
         assert train_batch_size > 0, "cannot train on 0 images"
         assert val_batch_size > 0, "cannot validate on 0 images"  # TODO: allow it
         assert window_size % 32 == 0, "unet reduces on x32 convolution size"
-        assert window_size % patch_size == 0, f"unet reduces on x{patch_size} patches"
+        assert window_size % patch_size == 0, 'unet reduces on x{} patches'.format(patch_size)
         assert (
             lk_alpha >= 0
         ), "leaky alpha has to be set to 0 to switch to simple relu activation function"
@@ -91,6 +93,7 @@ class CNN:
         self.augmentation_coef = augmentation_coef
         self.adjust_metric = adjust_metric
         self.save_metric = save_metric
+        self.stop_metric = stop_metric
         self.best_model_filename = best_model_filename
         self.log_csv_filename = log_csv_filename
         self.lk_alpha = lk_alpha
@@ -99,6 +102,7 @@ class CNN:
         self.residual = residual
         self.first_conv_size = first_conv_size
         self.patch_size = patch_size
+        self.use_multiprocessing = use_multiprocessing
         self.init_model()
         self.init_augmenter()
 
@@ -218,34 +222,41 @@ class CNN:
         csv_logger = CSVLogger(
             filename=os.path.join(self.rootdir, self.log_csv_filename), append=True
         )
+        callbacks=[csv_logger]
         # This callback reduces the learning rate when the training accuracy does not improve any more
-        lr_callback = ReduceLROnPlateau(
-            monitor=self.adjust_metric,
-            factor=0.5,
-            patience=5,
-            verbose=1,
-            mode="auto",
-            epsilon=0.0001,
-            cooldown=0,
-            min_lr=0,
-        )
+        if self.adjust_metric is not None:
+            lr_callback = ReduceLROnPlateau(
+                monitor=self.adjust_metric,
+                factor=0.5,
+                patience=5,
+                verbose=1,
+                mode="auto",
+                epsilon=0.0001,
+                cooldown=0,
+                min_lr=0,
+            )
+            callbacks += [lr_callback]
         # Stops the training process upon convergence
-        stop_callback = EarlyStopping(
-            monitor=self.adjust_metric,
-            min_delta=0.0001,
-            patience=11,
-            verbose=1,
-            mode="auto",
-        )
+        if self.stop_metric is not None:
+            stop_callback = EarlyStopping(
+                monitor=self.stop_metric,
+                min_delta=0.0001,
+                patience=11,
+                verbose=1,
+                mode="auto",
+            )
+            callbacks += [stop_callback]
         # Save the latest best model to rootdir
-        mode_autosave = ModelCheckpoint(
-            os.path.join(self.rootdir, self.best_model_filename),
-            monitor=self.save_metric,
-            mode="max",
-            save_best_only=True,
-            verbose=1,
-            period=1,
-        )
+        if self.save_metric is not None and self.best_model_filename is not None:
+            mode_autosave = ModelCheckpoint(
+                os.path.join(self.rootdir, self.best_model_filename),
+                monitor=self.save_metric,
+                mode="max",
+                save_best_only=True,
+                verbose=1,
+                period=1,
+            )
+            callbacks += [mode_autosave]
 
         try:
             history = self.model.fit_generator(
@@ -258,8 +269,8 @@ class CNN:
                 nb_epoch=self.nb_epochs,
                 initial_epoch=initial_epoch,
                 verbose=self.verbose,
-                callbacks=[lr_callback, stop_callback, csv_logger, mode_autosave],
-                use_multiprocessing=True,
+                callbacks=callbacks,
+                use_multiprocessing=self.use_multiprocessing,
             )
             print("Training completed")
             return history
@@ -274,7 +285,7 @@ class CNN:
             self.__generator__(X, Y),
             steps=steps,
             verbose=self.verbose,
-            use_multiprocessing=True,
+            use_multiprocessing=self.use_multiprocessing,
         )
         labels = self.model.metrics_names
         return dict(zip(labels, results))
