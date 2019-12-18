@@ -6,9 +6,9 @@ from PIL import Image
 
 def get_ground_img(Xi, patch_size, foreground_threshold):
     width, height = Xi.shape
-    assert patch_size>0, f'patch_size {patch_size} has to be > 0'
-    assert width%patch_size==0, f'{width} is not a factor of {patch_size}'
-    assert height%patch_size==0, f'{height} is not a factor of {patch_size}'
+    assert patch_size>0, 'patch_size {} has to be > 0'.format(patch_size)
+    assert width%patch_size==0, '{} is not a factor of {}'.format(width, patch_size)
+    assert height%patch_size==0, '{} is not a factor of {}'.format(height, patch_size)
     ground = np.zeros((int(width/patch_size), int(height/patch_size)))
     for j, i in np.ndindex(ground.shape):
         label = patch_to_label(Xi, i, j, patch_size, foreground_threshold)
@@ -93,7 +93,7 @@ def create_patches_gt(X, patch_size, stride):
 def group_patches(patches, num_images):
     return patches.reshape(num_images, -1)
 
-def extract_img_features(filename, stride):
+def extract_img_features(filename, stride, patch_size, padding):
     img = load_image(filename)
     img_patches = img_crop(img, patch_size, patch_size, stride, padding)
     X = np.asarray([img_patches[i] for i in range(len(img_patches))])
