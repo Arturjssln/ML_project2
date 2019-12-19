@@ -42,6 +42,25 @@ def iou(y_true, y_pred, smooth=1):
     return iou_coef
 
 
+def create_weighted_binary_crossentropy(zero_weight, one_weight):
+    def weighted_binary_crossentropy(y_true, y_pred):
+
+        # Original binary crossentropy (see losses.py):
+        # K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)
+
+        # Calculate the binary crossentropy
+        b_ce = K.binary_crossentropy(y_true, y_pred)
+
+        # Apply the weights
+        weight_vector = y_true * one_weight + (1.0 - y_true) * zero_weight
+        weighted_b_ce = weight_vector * b_ce
+
+        # Return the mean error
+        return K.mean(weighted_b_ce)
+
+    return weighted_binary_crossentropy
+
+
 class CNN:
     def __init__(
         self,
@@ -68,7 +87,8 @@ class CNN:
         residual=False,
         use_multiprocessing=True,
         first_conv_size=64,
-        patch_size=16
+        patch_size=16,
+        loss_fn="binary_crossentropy",
     ):
         """ Construct a CNN segmenter. """
         assert nb_classes > 0, "classify at least in one category!"
@@ -105,6 +125,7 @@ class CNN:
         self.first_conv_size = first_conv_size
         self.patch_size = patch_size
         self.use_multiprocessing = use_multiprocessing
+        self.loss_fn = loss_fn
         self.init_model()
         self.init_augmenter()
 
@@ -122,19 +143,18 @@ class CNN:
             upconv=True,
             residual=self.residual,
         )
+        loss_fn = self.__get_loss_fn__()
         # select loss function and metrics, as well as optimizer
         self.model.compile(
-            optimizer=Adam(lr=1e-4),
-            loss="binary_crossentropy",
-            metrics=[iou, f1, "accuracy",],
+            optimizer=Adam(lr=1e-4), loss=loss_fn, metrics=[iou, f1, "accuracy",],
         )  # TODO: use a better loss? https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
         print(self.model.summary())
 
     def init_augmenter(self):
         self.augmenter1 = iaa.Sequential(
             [
-               iaa.Fliplr(0.25),
-               iaa.Flipud(0.25),
+                iaa.Fliplr(0.25),
+                iaa.Flipud(0.25),
                 iaa.Affine(
                     rotate=(-180, 180), mode="reflect"
                 ),  # rotate all images with random angle
@@ -150,6 +170,18 @@ class CNN:
                 iaa.GammaContrast((0.5, 1.5)),
             ]
         )
+
+    def __get_loss_fn__(self):
+        if self.loss_fn == "weighted_binary_crossentropy":
+            w0 = 0.11
+            w1 = 0.89
+            print(
+                "using weighted_binary_crossentropy with class weights (0,1)=({},{})".format(
+                    w0, w1
+                )
+            )
+            return create_weighted_binary_crossentropy(w0, w1)
+        return self.loss_fn
 
     def __augment__(self, img, seg):
         aug_det1 = self.augmenter1.to_deterministic()
@@ -176,10 +208,14 @@ class CNN:
     def __transform__(self, img, seg):
         img_cp, seg_cp = img.copy(), seg.copy()
         img_cp, seg_cp = self.__augment__(img_cp, seg_cp)
-        img_cp, seg_cp = random_crop(img_cp, seg_cp, (self.window_size, self.window_size))
+        img_cp, seg_cp = random_crop(
+            img_cp, seg_cp, (self.window_size, self.window_size)
+        ) if self.channels_size > 1 else random_crop_1(
+            img_cp, seg_cp, (self.window_size, self.window_size)
+        )
         return (
             unsqueeze(img_cp) if self.channels_size == 1 else img_cp,
-            unsqueeze(seg_cp)
+            unsqueeze(seg_cp),
         )
 
     def __generator__(self, X, Y, batch_size=16):
@@ -193,9 +229,7 @@ class CNN:
                 (batch_size, self.window_size, self.window_size, self.channels_size)
             )
             # We use an integer value to label the pixel class
-            Y_batch = np.empty(
-                (batch_size, self.window_size, self.window_size, 1)
-            )
+            Y_batch = np.empty((batch_size, self.window_size, self.window_size, 1))
             for i in range(batch_size):
                 # Select a random image
                 idx = np.random.choice(X.shape[0])
@@ -224,7 +258,7 @@ class CNN:
         csv_logger = CSVLogger(
             filename=os.path.join(self.rootdir, self.log_csv_filename), append=True
         )
-        callbacks=[csv_logger]
+        callbacks = [csv_logger]
         # This callback reduces the learning rate when the training accuracy does not improve any more
         if self.adjust_metric is not None:
             lr_callback = ReduceLROnPlateau(
