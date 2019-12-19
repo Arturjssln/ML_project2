@@ -74,8 +74,10 @@ class CNN:
         assert nb_classes > 0, "classify at least in one category!"
         assert train_batch_size > 0, "cannot train on 0 images"
         assert val_batch_size > 0, "cannot validate on 0 images"  # TODO: allow it
-        assert window_size % 32 == 0, "unet reduces on x32 convolution size"
-        assert window_size % patch_size == 0, 'unet reduces on x{} patches'.format(patch_size)
+        assert window_size % (2**net_depth) == 0, "unet reduces on x{} convolution size".format(2**net_depth)
+        assert window_size % patch_size == 0, "unet reduces on x{} patches".format(
+            patch_size
+        )
         assert (
             lk_alpha >= 0
         ), "leaky alpha has to be set to 0 to switch to simple relu activation function"
