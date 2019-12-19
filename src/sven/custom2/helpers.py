@@ -11,16 +11,21 @@ def get_ground_img(Xi, patch_size, foreground_threshold):
     assert height%patch_size==0, '{} is not a factor of {}'.format(height, patch_size)
     ground = np.zeros((int(width/patch_size), int(height/patch_size)))
     for j, i in np.ndindex(ground.shape):
-        label = patch_to_label(Xi, i, j, patch_size, foreground_threshold)
+        if foreground_threshold is not None:
+            label = patch_to_label(Xi, i, j, patch_size, foreground_threshold)
+        else:
+            label = patch_to_mean(Xi, i, j, patch_size, foreground_threshold)
         ground[i, j] = label
     return ground
 
-def patch_to_label(Xi, i, j, patch_size, foreground_threshold):
+def patch_to_mean(Xi, i, j, patch_size, foreground_threshold):
     base_i = i*patch_size
     base_j = j*patch_size
     patch = Xi[base_i:base_i + patch_size, base_j:base_j + patch_size]
-    df = np.mean(patch)
-    if df > foreground_threshold:
+    return np.mean(patch)
+
+def patch_to_label(Xi, i, j, patch_size, foreground_threshold):
+    if patch_to_mean(Xi, i, j, patch_size, foreground_threshold) > foreground_threshold:
         return 1
     else:
         return 0
@@ -28,14 +33,17 @@ def patch_to_label(Xi, i, j, patch_size, foreground_threshold):
 def unsqueeze(array, axis=2):
     return np.expand_dims(array, axis=axis)
 
+def random_crop_1(img, mask, random_crop_size):
+    return random_crop(img, mask, random_crop_size)
+
 def random_crop(img, mask, random_crop_size):
-    # Note: image_data_format is 'channel_last'
-    assert img.shape[2] == 3
     height, width = img.shape[0], img.shape[1]
     dy, dx = random_crop_size
     x = np.random.randint(0, width - dx + 1)
     y = np.random.randint(0, height - dy + 1)
-    return img[y:(y+dy), x:(x+dx), :], mask[y:(y+dy), x:(x+dx)]
+    if (len(img.shape) == 3):
+        return img[y:(y+dy), x:(x+dx), :], mask[y:(y+dy), x:(x+dx)]
+    return img[y:(y+dy), x:(x+dx)], mask[y:(y+dy), x:(x+dx)]
 
 def load_image(infilename):
     """ Load an image from disk. """
