@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-MODEL_NAME="V3.002"
+MODEL_NAME="V3.002.2"
 
 import numpy as np
 import os
@@ -54,31 +54,11 @@ INITIAL_EPOCH = 0
 
 
 ## Train on whole data set
-#X_train, y_train = imgs, gt_imgs
+X_train, y_train = imgs, gt_imgs
 history = model.train(X_train, y_train, initial_epoch=INITIAL_EPOCH)
 
 
 model.save(os.path.join(root_dir, '{}-saved_weights.h5'.format(MODEL_NAME)))
-
-
-def plot_metric(metric_name):
-  # Plot training & validation accuracy values
-  f = plt.figure()
-  f.plot(history.history[metric_name])
-  f.plot(history.history['val_{}'.format(metric_name)])
-  f.title('Model {}'.format(metric_name))
-  f.ylabel(''+metric_name)
-  f.xlabel('Epoch')
-  f.legend(['Train', 'Test'], loc='upper left')
-  f.savefig(os.path.join(root_dir, '{}-{}.png'.format(MODEL_NAME, metric_name)))
-  f.clear()
-  plt.close(f)
-  #plt.show()
-
-plot_metric('loss')
-plot_metric('acc')
-plot_metric('f1')
-plot_metric('iou')
 
 results = model.test(X_test, y_test)
 print('--- report: saved weights ---')

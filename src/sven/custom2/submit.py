@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Imports
-
-# In[ ]:
-
-
 MODEL_V3 = {
-    "path": 'training/V3.001.h5',
+    "path": 'training/V3.002.h5',
     "batchnorm": True,
     "residual": True,
+    "net_depth": 5
 }
 
 MODEL_TO_IMPORT = MODEL_V3 # can be either a model (dict) or a string
@@ -21,14 +17,12 @@ DEFAULT = {
     "channels_size": 3,
     "batchnorm": False,
     "residual": False,
+    "net_depth": 4
 }
 IMAGE_SIZE = 608
 PATCH_SIZE = 16
 PTHRESHOLD = 0.25
 NB_TST_IMG = 50
-
-
-# In[ ]:
 
 
 import matplotlib.image as mpimg
@@ -39,19 +33,10 @@ from PIL import Image
 import re
 
 
-# # Load Model
-
-# In[ ]:
-
-
 def get_model_prop(prop_name):
     if isinstance(MODEL_TO_IMPORT, str) or prop_name not in MODEL_TO_IMPORT:
         return DEFAULT[prop_name]
     return MODEL_TO_IMPORT[prop_name]
-
-
-# In[ ]:
-
 
 from CNNv2 import CNN
 
@@ -63,14 +48,10 @@ model = CNN(
     channels_size=get_model_prop('channels_size'),
     batchnorm=get_model_prop('batchnorm'),
     residual=get_model_prop('residual'),
+    net_depth=get_model_prop('net_depth'),
 )
 model.load(MODEL_TO_IMPORT if isinstance(MODEL_TO_IMPORT, str) else MODEL_TO_IMPORT['path'])
 test_dir = "test_set_images/test_"
-
-
-# # Visualization 
-
-# In[ ]:
 
 
 from helpers import *
